@@ -9,6 +9,7 @@
 **확정된 요구사항**
 
 - 다중 사용자: 각자 로그인 후 개별 키워드·채널 설정
+- **회사 전용**: `@yesyoungin.com` 이메일만 가입·로그인 (`ALLOWED_EMAIL_DOMAIN`) + Supabase Confirm email
 - 카카오: OAuth + **나에게 보내기** API (푸시 없음, 나와의 채팅에 메모)
 - 데이터 소스: 공공데이터포털 OPEN API (한전 입찰 중심, 나라장터 용역 확장 가능)
 
@@ -31,6 +32,16 @@
 - **이메일**: SMTP (Gmail App Password 등)
 - **Slack**: Incoming Webhook URL
 - **카카오**: OAuth + 나에게 보내기 (푸시 없음)
+
+## 4.1 운영자 vs 사용자 설정
+
+| 구분 | 항목 | 설정 주체 | 저장 위치 |
+|------|------|-----------|-----------|
+| 운영자 | Supabase, 공공데이터 API 키, SMTP, 카카오 REST API 키 | 운영자 1명 | `.env`, Streamlit Secrets, GitHub Secrets |
+| 사용자 | 키워드·알림 규칙 | 각 사용자 | 웹앱 **알림 규칙** → `alert_rules` |
+| 사용자 | 이메일 수신 주소, Slack Webhook, 카카오 OAuth | 각 사용자 | 웹앱 **채널 연결** → `notification_channels`, `oauth_tokens` |
+
+공공데이터 API는 **운영자 키 1세트**로 전체 조회 후, 사용자별 키워드·채널로 알림을 분기합니다. 상세 표는 [`README.md`](../README.md#운영자-vs-사용자-설정) 참고.
 
 ## 5. Streamlit UI
 
@@ -56,11 +67,18 @@ GitHub Actions cron: UTC 23:00 (= KST 08:00), `workflow_dispatch` 수동 실행 
 
 ## 8. 사전 준비
 
+**운영자**
+
 1. Supabase 프로젝트 + SQL 마이그레이션 실행
-2. data.go.kr API 키 (나라장터)
-3. bigdata.kepco.co.kr API 키 (한전, 40자리)
-4. SMTP, Kakao Developers, Slack Webhook (사용자별)
-5. GitHub Secrets + Streamlit Cloud secrets
+2. data.go.kr API 키 (나라장터), bigdata.kepco.co.kr API 키 (한전)
+3. SMTP, Kakao Developers REST API 키
+4. GitHub Secrets + Streamlit Cloud secrets
+
+**각 사용자 (웹앱에서)**
+
+1. 회원가입 / 로그인
+2. Slack Incoming Webhook URL (선택)
+3. 알림 수신 이메일 주소, 카카오 OAuth 연결 (선택)
 
 ## 9. 리스크
 
@@ -75,3 +93,15 @@ GitHub Actions cron: UTC 23:00 (= KST 08:00), `workflow_dispatch` 수동 실행 
 2. 동일 공고 재발송 차단 (dedup)
 3. Slack / 이메일 / 카카오 테스트 발송
 4. GitHub Actions 수동 trigger
+
+## 11. 회사 이메일 접근 제한
+
+| 항목 | 내용 |
+|------|------|
+| 허용 도메인 | `yesyoungin.com` (예: `kch@yesyoungin.com`) |
+| 환경 변수 | `ALLOWED_EMAIL_DOMAIN=yesyoungin.com` |
+| 코드 | `src/auth/email_policy.py`, `src/auth/session.py` |
+| UI | `app.py` 로그인/회원가입, `pages/2_채널연결.py` 알림 수신 이메일 |
+| Supabase | Confirm email ON, Site URL / Redirect URLs 설정 |
+
+가입 → 확인 메일 인증 → 로그인 → 개인 채널·키워드 설정. 상세는 [`README.md`](../README.md#회사-이메일-제한-yesyoungincom) 참고.

@@ -5,7 +5,9 @@ from __future__ import annotations
 import streamlit as st
 from supabase import Client
 
+from src.auth.email_policy import get_allowed_domain, require_company_email
 from src.auth.supabase_client import get_supabase_client
+from src.db.repositories import Repository
 
 
 def init_session_state() -> None:
@@ -31,8 +33,9 @@ def get_user_repository() -> Repository:
 
 
 def login(email: str, password: str) -> None:
+    normalized_email = require_company_email(email)
     client = get_client()
-    result = client.auth.sign_in_with_password({"email": email, "password": password})
+    result = client.auth.sign_in_with_password({"email": normalized_email, "password": password})
     session = result.session
     user = result.user
     if not session or not user:
@@ -45,8 +48,9 @@ def login(email: str, password: str) -> None:
 
 
 def signup(email: str, password: str) -> None:
+    normalized_email = require_company_email(email)
     client = get_client()
-    client.auth.sign_up({"email": email, "password": password})
+    client.auth.sign_up({"email": normalized_email, "password": password})
 
 
 def logout() -> None:
@@ -64,3 +68,7 @@ def require_auth() -> str:
         st.warning("로그인이 필요합니다.")
         st.stop()
     return st.session_state.user_id
+
+
+def allowed_domain_label() -> str:
+    return f"@{get_allowed_domain()}"

@@ -14,7 +14,8 @@ if str(ROOT) not in sys.path:
 
 load_dotenv(ROOT / ".env")
 
-from src.auth.session import get_user_repository, require_auth  # noqa: E402
+from src.auth.email_policy import company_email_error_message, require_company_email  # noqa: E402
+from src.auth.session import allowed_domain_label, get_user_repository, require_auth  # noqa: E402
 from src.notifications.kakao_sender import build_kakao_auth_url  # noqa: E402
 
 st.set_page_config(page_title="채널 연결", page_icon="🔗")
@@ -27,13 +28,18 @@ channels = {c.channel: c for c in repo.list_channels(user_id)}
 
 # --- Email ---
 st.subheader("📧 이메일")
+st.caption(f"알림 수신 주소도 {allowed_domain_label()} 회사 메일만 등록할 수 있습니다.")
 email_channel = channels.get("email")
 default_email = (email_channel.config.get("email_address") if email_channel else st.session_state.get("user_email", ""))
 email_address = st.text_input("알림 수신 이메일", value=default_email or "")
 email_enabled = st.checkbox("이메일 알림 사용", value=email_channel.is_enabled if email_channel else True, key="email_on")
 if st.button("이메일 저장"):
-    repo.upsert_channel(user_id, "email", {"email_address": email_address}, is_enabled=email_enabled)
-    st.success("이메일 설정 저장 완료")
+    try:
+        normalized = require_company_email(email_address)
+        repo.upsert_channel(user_id, "email", {"email_address": normalized}, is_enabled=email_enabled)
+        st.success("이메일 설정 저장 완료")
+    except ValueError:
+        st.error(company_email_error_message())
 
 st.divider()
 

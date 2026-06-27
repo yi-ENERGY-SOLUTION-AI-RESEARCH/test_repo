@@ -20,6 +20,7 @@ load_streamlit_secrets()
 
 from src.alert_engine import AlertEngine  # noqa: E402
 from src.auth.session import get_user_repository, init_session_state, login, logout, require_auth, signup  # noqa: E402
+from src.auth.session import allowed_domain_label  # noqa: E402
 from src.notifications.kakao_sender import (  # noqa: E402
     build_kakao_auth_url,
     exchange_kakao_code,
@@ -57,25 +58,33 @@ def handle_kakao_callback(user_id: str) -> None:
 def render_auth_form() -> None:
     st.title("📢 입찰공고 알림")
     st.caption("공공데이터 OPEN API 기반 입찰공고 키워드 알림 서비스")
+    st.info(f"회사 직원 전용: **{allowed_domain_label()}** 이메일만 가입·로그인할 수 있습니다.")
 
     tab_login, tab_signup = st.tabs(["로그인", "회원가입"])
     with tab_login:
-        email = st.text_input("이메일", key="login_email")
+        email = st.text_input("회사 이메일", placeholder=f"name{allowed_domain_label()}", key="login_email")
         password = st.text_input("비밀번호", type="password", key="login_password")
         if st.button("로그인", type="primary"):
             try:
                 login(email, password)
                 st.rerun()
+            except ValueError as exc:
+                st.error(str(exc))
             except Exception as exc:
                 st.error(f"로그인 실패: {exc}")
 
     with tab_signup:
-        new_email = st.text_input("이메일", key="signup_email")
+        new_email = st.text_input("회사 이메일", placeholder=f"name{allowed_domain_label()}", key="signup_email")
         new_password = st.text_input("비밀번호", type="password", key="signup_password")
         if st.button("회원가입"):
             try:
                 signup(new_email, new_password)
-                st.success("회원가입 완료. 이메일 확인 후 로그인하세요.")
+                st.success(
+                    f"회원가입 요청이 완료되었습니다. {allowed_domain_label()} 메일함에서 "
+                    "Supabase 확인 메일을 인증한 뒤 로그인하세요."
+                )
+            except ValueError as exc:
+                st.error(str(exc))
             except Exception as exc:
                 st.error(f"회원가입 실패: {exc}")
 

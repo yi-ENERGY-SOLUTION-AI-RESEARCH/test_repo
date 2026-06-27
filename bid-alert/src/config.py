@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     kakao_rest_api_key: str = ""
     kakao_redirect_uri: str = "http://localhost:8501"
     app_base_url: str = "http://localhost:8501"
+    allowed_email_domain: str = "yesyoungin.com"
 
 
 @lru_cache
@@ -50,4 +51,5 @@ def get_settings() -> Settings:
         kakao_rest_api_key=os.getenv("KAKAO_REST_API_KEY", ""),
         kakao_redirect_uri=os.getenv("KAKAO_REDIRECT_URI", "http://localhost:8501"),
         app_base_url=os.getenv("APP_BASE_URL", "http://localhost:8501"),
+        allowed_email_domain=os.getenv("ALLOWED_EMAIL_DOMAIN", "yesyoungin.com"),
     )
