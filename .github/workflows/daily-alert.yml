@@ -1,0 +1,37 @@
+name: Daily Bid Alert
+
+on:
+  schedule:
+    - cron: "0 23 * * *"  # UTC 23:00 = KST 08:00
+  workflow_dispatch:
+
+jobs:
+  run-alerts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bid-alert
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run daily alert worker
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DATA_GO_KR_API_KEY: ${{ secrets.DATA_GO_KR_API_KEY }}
+          KEPCO_API_KEY: ${{ secrets.KEPCO_API_KEY }}
+          KEPCO_API_URL: ${{ secrets.KEPCO_API_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+        run: python jobs/daily_alert.py
